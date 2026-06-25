@@ -4,6 +4,13 @@ using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 using System.Text.Json;
 
+// Subcomando setup: no requiere base de datos ni host MCP.
+if (args.Length >= 1 && args[0].Equals("setup", StringComparison.OrdinalIgnoreCase))
+{
+    Environment.Exit(SetupCommand.Run(args[1..]));
+    return;
+}
+
 // Ruta del archivo SQLite. La base de datos se crea automáticamente si no existe.
 const string connectionString = "Data Source=mi_memoria.db";
 
