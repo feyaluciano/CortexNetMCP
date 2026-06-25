@@ -1,5 +1,7 @@
 using System.Text;
 
+namespace CortexNetMCP.Common;
+
 public static class SetupCommand
 {
     /// <summary>

@@ -1,5 +1,9 @@
 using ModelContextProtocol.Server;
 using System.ComponentModel;
+using CortexNetMCP.Data;
+using CortexNetMCP.DTOs;
+
+namespace CortexNetMCP.Server;
 
 /// <summary>
 /// Herramientas MCP para el sistema de memoria técnica CortexNet.

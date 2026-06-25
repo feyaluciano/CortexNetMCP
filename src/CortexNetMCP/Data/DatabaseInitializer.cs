@@ -1,5 +1,7 @@
 using Microsoft.Data.Sqlite;
 
+namespace CortexNetMCP.Data;
+
 /// <summary>
 /// Responsable de crear y mantener el esquema de la base de datos SQLite.
 /// Crea la base de datos, tablas, tabla FTS5, triggers e índices si no existen.

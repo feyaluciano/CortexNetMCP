@@ -1,3 +1,5 @@
+namespace CortexNetMCP.Common;
+
 public enum AgentTarget
 {
     ClaudeCode,

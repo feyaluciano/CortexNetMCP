@@ -2,6 +2,8 @@ using Microsoft.Data.Sqlite;
 using System.Text;
 using System.Text.RegularExpressions;
 
+namespace CortexNetMCP.Data;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Modelos
 // ─────────────────────────────────────────────────────────────────────────────

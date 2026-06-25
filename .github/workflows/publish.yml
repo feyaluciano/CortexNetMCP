@@ -21,11 +21,11 @@ jobs:
         with:
           dotnet-version: '10.x'
 
-      - run: dotnet restore CortexNetMCP/CortexNetMCP.csproj
+      - run: dotnet restore src/CortexNetMCP/CortexNetMCP.csproj
 
-      - run: dotnet build CortexNetMCP/CortexNetMCP.csproj --configuration Release --no-restore
+      - run: dotnet build src/CortexNetMCP/CortexNetMCP.csproj --configuration Release --no-restore
 
-      - run: dotnet pack CortexNetMCP/CortexNetMCP.csproj --configuration Release --no-build --output ./nupkg
+      - run: dotnet pack src/CortexNetMCP/CortexNetMCP.csproj --configuration Release --no-build --output ./nupkg
 
       # 1. PASO NUEVO: Intercambia el token OIDC de GitHub por una API Key temporal de NuGet
       - name: NuGet Login (OIDC)
