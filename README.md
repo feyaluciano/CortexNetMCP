@@ -63,6 +63,58 @@ dotnet tool uninstall -g CortexNetMCP
 
 ---
 
+## Configurar el Memory Protocol (paso siguiente a la instalacion)
+
+Luego de instalar `cortexnetmcp` y registrarlo en tu cliente MCP, ejecuta **una sola vez** el comando `setup` para inyectar el Memory Protocol en el archivo de configuracion de tu agente de IA.
+
+Este protocolo le enseña a la IA las cuatro reglas de comportamiento que necesita para usar CortexNetMCP correctamente en todas las sesiones: cuándo guardar, cuándo buscar, cómo cerrar una sesión y cómo recuperar contexto después de una compactación.
+
+### Agentes soportados
+
+**Claude Code**
+```bash
+# Solo el proyecto actual (crea/modifica ./CLAUDE.md)
+cortexnetmcp setup claude-code
+
+# Para todos tus proyectos (modifica ~/.claude/CLAUDE.md)
+cortexnetmcp setup claude-code --global
+```
+
+**Cursor**
+```bash
+# Solo el proyecto actual (.cursor/rules/cortexnet-memory.mdc)
+cortexnetmcp setup cursor
+
+# Global (~/.cursor/rules/cortexnet-memory.mdc)
+cortexnetmcp setup cursor --global
+```
+
+**VS Code / GitHub Copilot**
+```bash
+# Solo el proyecto actual (.github/copilot-instructions.md)
+cortexnetmcp setup vscode
+```
+
+**Windsurf**
+```bash
+# Solo el proyecto actual (.windsurfrules)
+cortexnetmcp setup windsurf
+
+# Global (~/.windsurfrules)
+cortexnetmcp setup windsurf --global
+```
+
+### Opciones adicionales
+
+```bash
+# Ver el protocolo completo sin modificar ningun archivo
+cortexnetmcp setup --print
+```
+
+El comando es **idempotente**: si el protocolo ya esta presente en el archivo, informa que no realizó cambios y no duplica el contenido. Para actualizar a una versión nueva del protocolo, elimina el bloque anterior del archivo y vuelve a ejecutar el comando.
+
+---
+
 ## Compilacion manual (para desarrolladores)
 
 Si quieres modificar el codigo fuente o generar un binario autonomo para distribuir sin depender del SDK de .NET del usuario final:
@@ -189,7 +241,10 @@ CortexNetMCP/
     ├── CortexNetMCPTools.cs    # Las 9 herramientas MCP
     ├── MemoryRepository.cs     # Acceso a datos SQLite / FTS5
     ├── DatabaseInitializer.cs  # Creacion de tablas, indices y triggers
-    └── Dtos.cs                 # Tipos de respuesta serializados
+    ├── Dtos.cs                 # Tipos de respuesta serializados
+    ├── MemoryProtocol.cs       # Texto del Memory Protocol con centinelas de idempotencia
+    ├── AgentTarget.cs          # Enum de agentes soportados y resolucion de rutas
+    └── SetupCommand.cs         # Logica del subcomando `cortexnetmcp setup`
 ```
 
 ---
