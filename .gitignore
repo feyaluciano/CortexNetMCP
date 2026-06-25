@@ -1,0 +1,77 @@
+## .NET / C# gitignore
+
+# Build outputs
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet packages
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!**/packages/build/
+**/[Pp]ackages/
+nuget.config
+
+# Restore lock files (uncomment to track)
+# packages.lock.json
+
+# MSBuild crash logs
+MSBuildCrashLogs/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Rider
+.idea/
+*.sln.iml
+
+# VS Code (keep workspace settings, ignore local overrides)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# dotnet tools
+.config/dotnet-tools.json
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+TestResult.xml
+coverage/
+*.coverage
+*.coveragexml
+
+# Publish output
+publish/
+PublishProfiles/
+
+# dotnet publish / single-file
+*.runtimeconfig.dev.json
+
+# JetBrains
+_ReSharper*/
+*.DotSettings.user
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment / secrets
+.env
+.env.*
+*.pfx
+*.p12
+appsettings.Development.json
+secrets.json

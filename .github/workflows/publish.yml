@@ -1,0 +1,39 @@
+name: Publish to NuGet.org
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: production
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - run: dotnet restore CortexNetMCP/CortexNetMCP.csproj
+
+      - run: dotnet build CortexNetMCP/CortexNetMCP.csproj --configuration Release --no-restore
+
+      - run: dotnet pack CortexNetMCP/CortexNetMCP.csproj --configuration Release --no-build --output ./nupkg
+
+      # 1. PASO NUEVO: Intercambia el token OIDC de GitHub por una API Key temporal de NuGet
+      - name: NuGet Login (OIDC)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: lucianof # Tu usuario de NuGet.org tal cual aparece en tu configuración
+
+      # 2. PASO MODIFICADO: Se añade la bandera --api-key usando la salida del paso anterior
+      - name: Push to NuGet (Trusted Publishing)
+        run: dotnet nuget push "./nupkg/*.nupkg" --source "https://api.nuget.org/v3/index.json" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --skip-duplicate
