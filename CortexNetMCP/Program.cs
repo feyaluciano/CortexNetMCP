@@ -2,13 +2,45 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
+using System.Reflection;
 using System.Text.Json;
 
-// Subcomando setup: no requiere base de datos ni host MCP.
-if (args.Length >= 1 && args[0].Equals("setup", StringComparison.OrdinalIgnoreCase))
+// Argumentos CLI: no requieren base de datos ni host MCP.
+if (args.Length >= 1)
 {
-    Environment.Exit(SetupCommand.Run(args[1..]));
-    return;
+    if (args[0].Equals("setup", StringComparison.OrdinalIgnoreCase))
+    {
+        Environment.Exit(SetupCommand.Run(args[1..]));
+        return;
+    }
+
+    if (args[0] is "--version" or "-v")
+    {
+        var version = Assembly
+            .GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion ?? "desconocida";
+        Console.WriteLine($"cortexnetmcp {version}");
+        return;
+    }
+
+    if (args[0] is "--help" or "-h")
+    {
+        Console.WriteLine("""
+            cortexnetmcp — Servidor MCP de memoria técnica a largo plazo
+
+            Uso:
+              cortexnetmcp                   Iniciar el servidor MCP (transporte stdio)
+              cortexnetmcp setup <agente>    Inyectar el Memory Protocol en el agente de IA
+              cortexnetmcp setup --print     Imprimir el Memory Protocol sin modificar archivos
+              cortexnetmcp --version         Mostrar la versión instalada
+              cortexnetmcp --help            Mostrar esta ayuda
+
+            Agentes soportados en setup:
+              claude-code, cursor, vscode, windsurf
+            """);
+        return;
+    }
 }
 
 // Ruta del archivo SQLite. La base de datos se crea automáticamente si no existe.
