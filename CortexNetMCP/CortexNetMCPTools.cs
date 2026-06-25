@@ -39,7 +39,7 @@ public sealed class CortexNetMCPTools
         "patrones descubiertos o cualquier información técnica relevante. " +
         "Retorna SaveMemoryResult con el ID asignado, proyecto y categoría.")]
     public SaveMemoryResult GuardarRecuerdo(
-        [Description("Nombre del proyecto (ej. 'CetApp', 'FacturacionAFIP').")] string proyecto,
+        [Description("Nombre del proyecto (ej. 'NegocioNube', 'Fixtureando').")] string proyecto,
         [Description("Categoría del recuerdo. Valores válidos: architecture, bug, decision, entity, endpoint, feature, task, pattern, lesson.")] string categoria,
         [Description("Título breve y descriptivo del recuerdo (ej. 'Fix CORS en producción').")] string titulo,
         [Description("Contenido detallado: descripción completa, causa raíz, solución, contexto, etc.")] string contenido,
