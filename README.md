@@ -38,10 +38,14 @@ Este es el metodo recomendado. No requiere clonar el repositorio ni configurar r
 **1. Instalar desde NuGet:**
 
 ```bash
-dotnet tool install -g CortexNetMCP
+dotnet tool install -g CortexNetMCP --ignore-failed-sources --add-source https://api.nuget.org/v3/index.json
 ```
 
 Esto descarga el paquete y genera automaticamente un ejecutable global `cortexnetmcp` disponible desde cualquier terminal.
+
+> **¿Por qué `--ignore-failed-sources` y `--add-source`?**
+> Es muy comun en entornos corporativos tener feeds privados de NuGet configurados (por ejemplo, Azure DevOps de tu empresa). Si alguno de esos feeds requiere autenticacion o no esta disponible en ese momento, `dotnet tool install` falla antes de llegar a buscar el paquete en NuGet.org.
+> Los flags `--ignore-failed-sources` ignora esos feeds con error en lugar de abortar, y `--add-source` se asegura de que NuGet.org este disponible como fuente aunque no este en tu configuracion global.
 
 **2. Verificar la instalacion:**
 
@@ -52,7 +56,7 @@ cortexnetmcp --version
 **3. Actualizar a la ultima version:**
 
 ```bash
-dotnet tool update -g CortexNetMCP
+dotnet tool update -g CortexNetMCP --ignore-failed-sources --add-source https://api.nuget.org/v3/index.json
 ```
 
 **4. Desinstalar:**
