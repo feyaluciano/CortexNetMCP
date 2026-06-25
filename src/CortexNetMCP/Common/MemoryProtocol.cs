@@ -1,3 +1,5 @@
+namespace CortexNetMCP.Common;
+
 public static class MemoryProtocol
 {
     public const string SentinelStart = "<!-- cortexnetmcp-memory-protocol-start -->";

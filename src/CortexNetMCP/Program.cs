@@ -1,9 +1,12 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 using System.Reflection;
 using System.Text.Json;
+using CortexNetMCP.Common;
+using CortexNetMCP.Data;
+using CortexNetMCP.DTOs;
 
 // Argumentos CLI: no requieren base de datos ni host MCP.
 if (args.Length >= 1)

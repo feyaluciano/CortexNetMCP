@@ -1,4 +1,7 @@
 using System.Text.Json.Serialization;
+using CortexNetMCP.Data;
+
+namespace CortexNetMCP.DTOs;
 
 // ─── Base DTO ────────────────────────────────────────────────────────────────
 
