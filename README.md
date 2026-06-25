@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/cortexnetmcp.png" alt="CortexNetMCP" />
+</p>
+
 # CortexNetMCP
 
 > Memoria a largo plazo para tu IA. No más contexto perdido entre sesiones.
