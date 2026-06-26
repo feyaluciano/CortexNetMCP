@@ -28,6 +28,8 @@ public class DatabaseInitializer
         EnableForeignKeys(connection);
         CreateMemoriesTable(connection);
         CreateMemoryRelationsTable(connection);
+        CreateSessionsTable(connection);
+        MigrateMemoriesAddSessionId(connection);
         CreateFts5VirtualTable(connection);
         CreateFts5Triggers(connection);
         CreateIndexes(connection);
@@ -145,6 +147,27 @@ public class DatabaseInitializer
             """);
     }
 
+    private static void CreateSessionsTable(SqliteConnection conn) =>
+        Execute(conn, """
+            CREATE TABLE IF NOT EXISTS Sessions (
+                Id          TEXT PRIMARY KEY,
+                Project     TEXT NOT NULL,
+                ProjectPath TEXT NULL,
+                GitBranch   TEXT NULL,
+                Metadata    TEXT NULL,
+                StartedAt   TEXT NOT NULL DEFAULT (datetime('now')),
+                EndedAt     TEXT NULL
+            );
+            """);
+
+    private static void MigrateMemoriesAddSessionId(SqliteConnection conn)
+    {
+        using var check = conn.CreateCommand();
+        check.CommandText = "SELECT COUNT(*) FROM pragma_table_info('Memories') WHERE name = 'SessionId';";
+        if ((long)(check.ExecuteScalar() ?? 0L) == 0)
+            Execute(conn, "ALTER TABLE Memories ADD COLUMN SessionId TEXT NULL REFERENCES Sessions(Id) ON DELETE SET NULL;");
+    }
+
     private static void CreateIndexes(SqliteConnection conn)
     {
         Execute(conn, "CREATE INDEX IF NOT EXISTS IX_Memories_Project          ON Memories(Project);");
@@ -152,6 +175,9 @@ public class DatabaseInitializer
         Execute(conn, "CREATE INDEX IF NOT EXISTS IX_Memories_Project_Category ON Memories(Project, Category);");
         Execute(conn, "CREATE INDEX IF NOT EXISTS IX_MemRelations_Source       ON MemoryRelations(SourceMemoryId);");
         Execute(conn, "CREATE INDEX IF NOT EXISTS IX_MemRelations_Target       ON MemoryRelations(TargetMemoryId);");
+        Execute(conn, "CREATE INDEX IF NOT EXISTS IX_Sessions_Project          ON Sessions(Project);");
+        Execute(conn, "CREATE INDEX IF NOT EXISTS IX_Sessions_GitBranch        ON Sessions(GitBranch);");
+        Execute(conn, "CREATE INDEX IF NOT EXISTS IX_Memories_SessionId        ON Memories(SessionId);");
     }
 
     private static void Execute(SqliteConnection conn, string sql)

@@ -6,60 +6,69 @@ public static class MemoryProtocol
     public const string SentinelEnd   = "<!-- cortexnetmcp-memory-protocol-end -->";
 
     public static readonly string Block = """
-        <!-- cortexnetmcp-memory-protocol-start -->
-
         ## Memory Protocol — CortexNet MCP
 
-        Tenés acceso a un servidor de memoria técnica a largo plazo (CortexNet MCP).
-        Seguí estas reglas en cada sesión de trabajo.
+        You have access to a persistent long-term technical memory server (CortexNet MCP) via Model Context Protocol tools. You MUST strictly adhere to these instructions during every development session.
 
-        ### 1. Cuándo GUARDAR un recuerdo
+        ### 1. When to SAVE a Memory
 
-        Llamá a `GuardarRecuerdo` inmediatamente después de cualquiera de estos eventos:
+        Call the `GuardarRecuerdo` tool immediately after any of the following events occur:
 
-        - Se resolvió un bug (`categoria=bug`): registrá causa raíz, síntomas y la solución aplicada.
-        - Se tomó una decisión de arquitectura (`categoria=architecture` o `decision`): registrá la decisión, su justificación y las alternativas descartadas.
-        - Se descubrió un patrón o técnica reutilizable (`categoria=pattern`): registrá cuándo y cómo aplicarlo.
-        - Se realizó un cambio de configuración o entorno (`categoria=decision`): registrá el valor anterior, el nuevo y el motivo.
-        - Se definió o aclaró una entidad, endpoint o modelo de datos (`categoria=entity` / `endpoint`): registrá su contrato y comportamiento.
+        - **Bug Resolved** (`categoria=bug`): Document the root cause, specific symptoms, and the exact working solution applied.
+        - **Architectural/Design Decision Made** (`categoria=architecture` or `decision`): Record the selected approach, its technical justification, and any discarded alternatives with their trade-offs.
+        - **Reusable Pattern/Technique Discovered** (`categoria=pattern`): Document when, why, and how to apply this structural pattern or source generator in the future.
+        - **Configuration/Environment Change** (`categoria=decision`): Document the previous values, the new configuration, and the rationale behind the change.
+        - **Data Model/API Definition** (`categoria=entity` or `endpoint`): Record the strict contract, schema, or DTO behavior clarified during development.
 
-        No guardes observaciones triviales, pasos intermedios ni información efímera.
+        *CRITICAL:* Do not save trivial syntax observations, intermediate debugging steps, or ephemeral execution data.
 
-        ### 2. Cuándo BUSCAR en memoria
+        ### 2. When to SEARCH Memory
 
-        **Reactivo** — cuando el usuario pide explícitamente recordar algo:
-        - Llamá a `BuscarRecuerdos` con las palabras clave del usuario.
-        - Si conocés el nombre del proyecto, pasalo como `proyecto` para acotar los resultados.
+        **Reactive Search** — Activated when the user explicitly asks to recall past info:
+        - Call `BuscarRecuerdos` using the specific keywords provided by the user.
+        - Always provide the `proyecto` identifier if known to narrow down and optimize results.
 
-        **Proactivo** — al inicio de cualquier tarea no trivial:
-        - Antes de escribir código, diagnosticar un bug o tomar una decisión de diseño, llamá a `RecordarContextoProyecto` con `proyecto` = nombre del proyecto actual y `tareaActual` = descripción en lenguaje natural de la tarea.
-        - Leé los recuerdos devueltos antes de continuar. Esto evita repetir bugs ya resueltos y mantiene consistencia con decisiones previas.
+        **Proactive Search** — *Mandatory first action* before starting any non-trivial development task:
+        - Before writing any code, diagnosing a complex bug, or making a design choice, you MUST call `RecordarContextoProyecto`. Pass the current workspace identifier as `proyecto` and a short description of the user request as `tareaActual`.
+        - Provide optional fields when available: `projectPath` (absolute local directory), `gitBranch` (current Git branch), `agentModel`, `agentClient`, `gitCommitHash`. These enrich the session record for future traceability.
+        - The response includes two critical fields to read **before proceeding**:
+          - `HandoffNote`: the `task` summary saved at the end of the previous session. If not null, read its `Content` field — it contains pending work, last status, and recommended next steps.
+          - `ActiveSessionId`: the UUID of the session just opened server-side. You do NOT need to track or pass this — the server handles it automatically.
+        - Thoroughly analyze both `HandoffNote` and `RelevantMemories` before proceeding.
 
-        ### 3. Protocolo de cierre de sesión
+        ### 3. Session Closure Protocol
 
-        Antes de terminar cualquier sesión donde se realizó trabajo, llamá a `GuardarRecuerdo` una vez con:
+        Before concluding a major interaction, finishing a task workflow, or when the user indicates they are checking out, you MUST execute a formal handoff. Call `GuardarRecuerdo` exactly once with the following payload structure:
         - `categoria` = `task`
-        - `titulo` = etiqueta corta de la sesión (ej. "Sesión 2025-06-25: refactor auth")
-        - `contenido` = resumen estructurado: qué se completó, qué quedó pendiente, próximos pasos recomendados y decisiones clave tomadas.
+        - `titulo` = Short session identifier tag (e.g., "Session 2026-06-25: refactor auth pipelines")
+        - `contenido` = A highly structured Markdown summary including: Current project status, what was successfully completed, what tasks remain pending, and explicit recommended next steps for the next session.
 
-        Este resumen es tu nota de traspaso para la próxima sesión.
+        **The server automatically closes the active session when it receives a `task`-category save.** You do NOT need to manage session IDs or call any extra tool — saving the `task` memory IS the session close signal.
 
-        ### 4. Recuperación de contexto post-compactación
+        ### 4. Context Recovery Post-Compaction
 
-        Si el contexto de la conversación fue compactado o una nueva sesión comienza sobre un proyecto en curso, llamá a `RecordarContextoProyecto` como **primera acción** — antes de leer archivos o escribir código. Usá el nombre del proyecto y la descripción de la tarea actual para rehidratar el contexto desde la memoria a largo plazo.
+        If the conversation context window is reaching its token capacity or a fresh session begins on an ongoing project, you MUST call `RecordarContextoProyecto` as your **absolute first action** — before attempting to read local workspace files or generating new code. The call opens a fresh session server-side and returns `HandoffNote` with the previous session's summary to rehydrate your state.
 
-        ### Referencia rápida de herramientas
+        ### 5. Emergency Compaction Sequence
 
-        | Situación | Herramienta | Parámetros clave |
+        If context is being compacted mid-session and you need to preserve state immediately:
+        1. Save a `task` memory with your current progress summary — this **closes the active session**.
+        2. Immediately call `RecordarContextoProyecto` again — this **opens a new session** and returns the `task` you just saved as `HandoffNote`.
+        3. Read `HandoffNote.Content` and continue from where you left off.
+
+        Never risk terminating a session without executing this sequence if there is in-progress work.
+
+        ### 6. Tools Quick Reference Guide
+
+        | Trigger Situation | MCP Tool to Call | Mandatory/Key Parameters |
         |---|---|---|
-        | Guardar un hecho / decisión / fix | `GuardarRecuerdo` | `proyecto`, `categoria`, `titulo`, `contenido` |
-        | El usuario pide recordar algo | `BuscarRecuerdos` | `textoBusqueda`, opcionalmente `proyecto` |
-        | Inicio de tarea (proactivo) | `RecordarContextoProyecto` | `proyecto`, `tareaActual` |
-        | Resumen de sesión | `GuardarRecuerdo` | `categoria=task`, `contenido` estructurado |
-        | Después de compactación / sesión nueva | `RecordarContextoProyecto` | `proyecto`, `tareaActual` |
+        | Saving an engineering fact, fix, or choice | `GuardarRecuerdo` | `proyecto`, `categoria`, `titulo`, `contenido` |
+        | User explicitly asks to recall or look up info | `BuscarRecuerdos` | `textoBusqueda`, `proyecto` (optional but recommended) |
+        | Proactive task initialization — always first | `RecordarContextoProyecto` | `proyecto`, `tareaActual`, optional: `projectPath`, `gitBranch`, `agentModel`, `agentClient`, `gitCommitHash` |
+        | Standard session close / end of chat | `GuardarRecuerdo` | `categoria="task"`, structured `contenido` — also closes the session |
+        | Emergency compaction or brand new chat | `RecordarContextoProyecto` → read `HandoffNote` | `proyecto`, `tareaActual` |
 
-        Valores válidos para `categoria`: `architecture`, `bug`, `decision`, `entity`, `endpoint`, `feature`, `task`, `pattern`, `lesson`.
+        *Allowed strict values for `categoria`:* `architecture`, `bug`, `decision`, `entity`, `endpoint`, `feature`, `task`, `pattern`, `lesson`.
 
-        <!-- cortexnetmcp-memory-protocol-end -->
         """;
 }

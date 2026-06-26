@@ -16,6 +16,7 @@ namespace CortexNetMCP.Server;
 public sealed class CortexNetMCPTools
 {
     private readonly MemoryRepository _repo;
+    private readonly SessionManager   _sessionManager;
 
     private static readonly HashSet<string> ValidCategories =
     [
@@ -28,9 +29,10 @@ public sealed class CortexNetMCPTools
         "related_to", "supersedes", "depends_on", "fixes", "references"
     ];
 
-    public CortexNetMCPTools(MemoryRepository repository)
+    public CortexNetMCPTools(MemoryRepository repository, SessionManager sessionManager)
     {
-        _repo = repository;
+        _repo           = repository;
+        _sessionManager = sessionManager;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -63,13 +65,22 @@ public sealed class CortexNetMCPTools
 
         try
         {
-            var id = _repo.InsertMemory(proyecto.Trim(), cat, titulo.Trim(), contenido, tags, filePaths);
+            var project   = proyecto.Trim();
+            var sessionId = _sessionManager.GetActiveSession(project);
+            var id        = _repo.InsertMemory(project, cat, titulo.Trim(), contenido, tags, filePaths, sessionId);
+
+            if (cat == "task" && sessionId is not null)
+            {
+                _repo.CloseSession(sessionId);
+                _sessionManager.ClearActiveSession(project);
+            }
+
             return new SaveMemoryResult
             {
                 Success  = true,
                 Message  = $"Recuerdo #{id} guardado correctamente.",
                 MemoryId = id,
-                Project  = proyecto.Trim(),
+                Project  = project,
                 Category = cat,
             };
         }
@@ -412,13 +423,18 @@ public sealed class CortexNetMCPTools
 
     [McpServerTool, Description(
         "Recupera automáticamente el conocimiento relevante de un proyecto antes de realizar una tarea. " +
-        "Analiza la descripción de la tarea y busca en Title, Content, Tags, Category y FilePaths " +
-        "usando FTS5 con ranking bm25(). Devuelve los recuerdos más útiles ordenados por relevancia " +
-        "descendente para que el agente tome decisiones informadas, reutilice soluciones previas " +
-        "y evite repetir bugs ya resueltos. Retorna ProjectContextResult con RelevantMemoryDto[].")]
+        "Abre una nueva sesión de trabajo y retorna la nota de traspaso (HandoffNote) de la sesión anterior " +
+        "junto con los recuerdos más relevantes ordenados por BM25. " +
+        "Llamar siempre como PRIMERA acción antes de escribir código o tomar decisiones. " +
+        "Retorna ProjectContextResult con RelevantMemoryDto[], HandoffNote y ActiveSessionId.")]
     public ProjectContextResult RecordarContextoProyecto(
         [Description("Nombre del proyecto sobre el que se ejecuta la tarea.")] string proyecto,
-        [Description("Descripción de la tarea actual que el agente va a realizar.")] string tareaActual)
+        [Description("Descripción de la tarea actual que el agente va a realizar.")] string tareaActual,
+        [Description("Opcional: ruta absoluta del workspace local (ej. 'D:\\sourcef\\MiProyecto').")] string? projectPath = null,
+        [Description("Opcional: rama Git activa (ej. 'feature/afip-auth', 'main').")] string? gitBranch = null,
+        [Description("Opcional: modelo de lenguaje en uso (ej. 'claude-sonnet-4-6').")] string? agentModel = null,
+        [Description("Opcional: cliente MCP que inicia la sesión (ej. 'claude-code', 'cursor').")] string? agentClient = null,
+        [Description("Opcional: hash del último commit Git para trazabilidad absoluta del código.")] string? gitCommitHash = null)
     {
         if (string.IsNullOrWhiteSpace(tareaActual))
             return new ProjectContextResult
@@ -429,11 +445,29 @@ public sealed class CortexNetMCPTools
                 TaskDescription  = string.Empty,
                 TotalResults     = 0,
                 RelevantMemories = [],
+                HandoffNote      = null,
+                ActiveSessionId  = string.Empty,
             };
 
         try
         {
-            var scored = _repo.SearchMemoriesWithScore(proyecto.Trim(), tareaActual.Trim());
+            var project = proyecto.Trim();
+            var task    = tareaActual.Trim();
+
+            var lastSession = _repo.GetLastClosedSession(project);
+            MemoryDto? handoffNote = null;
+            if (lastSession is not null)
+            {
+                var handoffMemory = _repo.GetTaskMemoryForSession(lastSession.Id);
+                if (handoffMemory is not null)
+                    handoffNote = handoffMemory.ToDto();
+            }
+
+            var metadata    = BuildMetadata(agentModel, agentClient, gitCommitHash);
+            var newSessionId = _repo.CreateSession(project, projectPath?.Trim(), gitBranch?.Trim(), metadata);
+            _sessionManager.SetActiveSession(project, newSessionId);
+
+            var scored = _repo.SearchMemoriesWithScore(project, task);
             var dtos = scored.Select(t => new RelevantMemoryDto
             {
                 Id             = t.Memory.Id,
@@ -443,14 +477,17 @@ public sealed class CortexNetMCPTools
                 Tags           = t.Memory.Tags,
                 RelevanceScore = t.Score,
             }).ToList();
+
             return new ProjectContextResult
             {
                 Success          = true,
-                Message          = $"{dtos.Count} recuerdo(s) relevante(s) encontrado(s) para la tarea.",
-                Project          = proyecto.Trim(),
-                TaskDescription  = tareaActual.Trim(),
+                Message          = $"{dtos.Count} recuerdo(s) relevante(s) encontrado(s). Sesión {newSessionId[..8]}… iniciada.",
+                Project          = project,
+                TaskDescription  = task,
                 TotalResults     = dtos.Count,
                 RelevantMemories = dtos,
+                HandoffNote      = handoffNote,
+                ActiveSessionId  = newSessionId,
             };
         }
         catch (Exception ex)
@@ -463,7 +500,21 @@ public sealed class CortexNetMCPTools
                 TaskDescription  = tareaActual,
                 TotalResults     = 0,
                 RelevantMemories = [],
+                HandoffNote      = null,
+                ActiveSessionId  = string.Empty,
             };
         }
     }
+
+    private static string? BuildMetadata(string? model, string? client, string? commitHash)
+    {
+        if (model is null && client is null && commitHash is null) return null;
+        var parts = new List<string>(3);
+        if (model      is not null) parts.Add($"\"model\":\"{Esc(model)}\"");
+        if (client     is not null) parts.Add($"\"client\":\"{Esc(client)}\"");
+        if (commitHash is not null) parts.Add($"\"gitCommitHash\":\"{Esc(commitHash)}\"");
+        return $"{{{string.Join(",", parts)}}}";
+    }
+
+    private static string Esc(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
 }

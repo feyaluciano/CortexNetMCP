@@ -24,6 +24,7 @@ public sealed class MemoryDto
     public string?  FilePaths { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public string?  SessionId { get; set; }
 }
 
 // ─── Tool Result DTOs ────────────────────────────────────────────────────────
@@ -91,6 +92,8 @@ public sealed class ProjectContextResult : ToolResponse
     public string                  TaskDescription  { get; set; } = string.Empty;
     public int                     TotalResults     { get; set; }
     public List<RelevantMemoryDto> RelevantMemories { get; set; } = [];
+    public MemoryDto?              HandoffNote      { get; set; }
+    public string                  ActiveSessionId  { get; set; } = string.Empty;
 }
 
 public sealed class RelatedMemoryDto
@@ -150,5 +153,6 @@ internal static class MemoryMapping
         FilePaths = r.FilePaths,
         CreatedAt = r.CreatedAt,
         UpdatedAt = r.UpdatedAt,
+        SessionId = r.SessionId,
     };
 }
