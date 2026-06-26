@@ -70,6 +70,7 @@ builder.Services.AddSingleton(jsonOptions);
 // Registrar servicios de infraestructura como Singleton para reutilizar conexiones.
 builder.Services.AddSingleton(new DatabaseInitializer(connectionString));
 builder.Services.AddSingleton(new MemoryRepository(connectionString));
+builder.Services.AddSingleton<SessionManager>();
 
 // Registrar el servidor MCP con las herramientas definidas en CortexNetMCPTools.
 builder.Services
