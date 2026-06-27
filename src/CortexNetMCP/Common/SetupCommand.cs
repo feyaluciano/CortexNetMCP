@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Nodes;
 
 namespace CortexNetMCP.Common;
 
@@ -67,17 +68,60 @@ public static class SetupCommand
 
         File.AppendAllText(targetPath, separator + MemoryProtocol.Block + Environment.NewLine, Encoding.UTF8);
 
+        string? mcpConfigPath = agent.Value.ResolveMcpConfigPath(isGlobal);
+        if (mcpConfigPath is not null)
+            RegisterMcpServer(mcpConfigPath, isGlobal);
+
         string scope = isGlobal ? "global" : "proyecto";
         Console.WriteLine();
         Console.WriteLine("Memory Protocol de CortexNet inyectado correctamente.");
         Console.WriteLine($"  Agente : {agentName}");
         Console.WriteLine($"  Scope  : {scope}");
         Console.WriteLine($"  Archivo: {targetPath}");
+        if (mcpConfigPath is not null)
+            Console.WriteLine($"  MCP    : {mcpConfigPath}");
         Console.WriteLine();
         Console.WriteLine("El agente de IA leerá y seguirá estas reglas desde la próxima sesión.");
         Console.WriteLine();
 
         return 0;
+    }
+
+    private static void RegisterMcpServer(string mcpConfigPath, bool isGlobal)
+    {
+        string? dir = Path.GetDirectoryName(mcpConfigPath);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
+
+        JsonObject root;
+        if (File.Exists(mcpConfigPath))
+        {
+            try { root = JsonNode.Parse(File.ReadAllText(mcpConfigPath, Encoding.UTF8))?.AsObject() ?? []; }
+            catch { root = []; }
+        }
+        else
+        {
+            root = [];
+        }
+
+        // Global scope usa { "mcpServers": { ... } }; proyecto usa formato plano { "nombre": { ... } }
+        if (isGlobal)
+        {
+            if (root["mcpServers"] is not JsonObject servers)
+            {
+                servers = [];
+                root["mcpServers"] = servers;
+            }
+            servers["CortexNetMCP"] = new JsonObject { ["command"] = "cortexnetmcp" };
+        }
+        else
+        {
+            root["CortexNetMCP"] = new JsonObject { ["command"] = "cortexnetmcp" };
+        }
+
+        File.WriteAllText(mcpConfigPath,
+            root.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }),
+            Encoding.UTF8);
     }
 
     private static void PrintUsage()

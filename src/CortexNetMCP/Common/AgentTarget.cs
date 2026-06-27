@@ -37,6 +37,23 @@ public static class AgentTargetExtensions
         };
     }
 
+    /// <summary>
+    /// Resuelve la ruta del archivo de configuración MCP del agente.
+    /// Retorna null cuando el agente no requiere configuración MCP propia.
+    /// </summary>
+    public static string? ResolveMcpConfigPath(this AgentTarget agent, bool global)
+    {
+        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        string cwd  = Environment.CurrentDirectory;
+
+        return (agent, global) switch
+        {
+            (AgentTarget.ClaudeCode, true)  => Path.Combine(home, ".claude", "mcp.json"),
+            (AgentTarget.ClaudeCode, false) => Path.Combine(cwd, ".mcp.json"),
+            _                               => null,
+        };
+    }
+
     public static AgentTarget? TryParse(string name) =>
         name.ToLowerInvariant() switch
         {
