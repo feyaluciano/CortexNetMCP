@@ -48,7 +48,9 @@ public static class AgentTargetExtensions
 
         return (agent, global) switch
         {
-            (AgentTarget.ClaudeCode, true)  => Path.Combine(home, ".claude", "mcp.json"),
+            // Global: Claude Code lee la configuración de usuario desde ~/.claude.json
+            (AgentTarget.ClaudeCode, true)  => Path.Combine(home, ".claude.json"),
+            // Proyecto: formato plano estándar de .mcp.json
             (AgentTarget.ClaudeCode, false) => Path.Combine(cwd, ".mcp.json"),
             _                               => null,
         };

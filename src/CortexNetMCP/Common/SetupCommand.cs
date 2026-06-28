@@ -104,19 +104,27 @@ public static class SetupCommand
             root = [];
         }
 
-        // Global scope usa { "mcpServers": { ... } }; proyecto usa formato plano { "nombre": { ... } }
+        var serverEntry = new JsonObject
+        {
+            ["type"]    = "stdio",
+            ["command"] = "cortexnetmcp",
+            ["args"]    = new JsonArray(),
+        };
+
         if (isGlobal)
         {
+            // ~/.claude.json: los servidores van bajo la clave "mcpServers" de nivel superior
             if (root["mcpServers"] is not JsonObject servers)
             {
                 servers = [];
                 root["mcpServers"] = servers;
             }
-            servers["CortexNetMCP"] = new JsonObject { ["command"] = "cortexnetmcp" };
+            servers["CortexNetMCP"] = serverEntry;
         }
         else
         {
-            root["CortexNetMCP"] = new JsonObject { ["command"] = "cortexnetmcp" };
+            // .mcp.json de proyecto: formato plano sin wrapper
+            root["CortexNetMCP"] = serverEntry;
         }
 
         File.WriteAllText(mcpConfigPath,
